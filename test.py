@@ -9,7 +9,6 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📈 AI株価分析アプリ")
 st.title("AI株価分析アプリ")
 backtest_url = "https://stock-ai-app-4app97coiy8bdxmc9poybk6.streamlit.app/"
 
