@@ -662,8 +662,8 @@ with tab6:
 
             change_rate = ((latest_close - prev_close) / prev_close) * 100
 
-            ma5 = data["Close"].rolling(5).mean().iloc[-1]
-            ma25 = data["Close"].rolling(25).mean().iloc[-1]
+            ma5 = data["Close"].rolling(5).mean().iloc[-1].item()
+            ma25 = data["Close"].rolling(25).mean().iloc[-1].item()
 
             delta = data["Close"].diff()
             gain = delta.where(delta > 0, 0)
@@ -674,7 +674,7 @@ with tab6:
 
             rs = avg_gain / avg_loss
             rsi = 100 - (100 / (1 + rs))
-            latest_rsi = rsi.iloc[-1]
+            latest_rsi = rsi.iloc[-1].item()
 
             ema12 = data["Close"].ewm(span=12).mean()
             ema26 = data["Close"].ewm(span=26).mean()
@@ -682,8 +682,8 @@ with tab6:
             macd = ema12 - ema26
             signal = macd.ewm(span=9).mean()
 
-            latest_macd = macd.iloc[-1]
-            latest_signal = signal.iloc[-1]
+            latest_macd = macd.iloc[-1].item()
+            latest_signal = signal.iloc[-1].item()
 
             score = 0
             reasons = []
@@ -725,7 +725,9 @@ with tab6:
                 "理由": reasons
             })
 
-        except:
+        except Exception as e:
+            st.write(f"{ticker} でエラー")
+            st.code(str(e))
             continue
 
     watch_data = sorted(
