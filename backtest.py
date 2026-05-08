@@ -197,7 +197,7 @@ else:
     # 日別結果
     # =====================
 
-    st.subheader("📋 日別予測結果")
+    st.subheader("日別予測結果")
 
     result_data = []
 

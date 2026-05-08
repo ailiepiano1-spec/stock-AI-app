@@ -3,11 +3,51 @@ import yfinance as yf
 import plotly.graph_objects as go
 from sklearn.linear_model import LinearRegression
 import numpy as np
+import os
 
 st.set_page_config(
     page_title="AI株価分析アプリ",
     layout="wide"
 )
+def get_display_name(ticker):
+
+    try:
+        stock = yf.Ticker(ticker)
+
+        return stock.info.get(
+            "shortName",
+            ticker
+        )
+
+    except:
+
+        return ticker
+
+
+def load_favorites():
+
+    if os.path.exists("favorites.txt"):
+
+        with open(
+            "favorites.txt",
+            "r",
+            encoding="utf-8"
+        ) as f:
+
+            return f.read().strip()
+
+    return "7203.T,6758.T,NVDA"
+
+
+def save_favorites(text):
+
+    with open(
+        "favorites.txt",
+        "w",
+        encoding="utf-8"
+    ) as f:
+
+        f.write(text)
 
 st.title("AI株価分析")
 backtest_url = "https://stock-ai-app-4app97coiy8bdxmc9poybk6.streamlit.app/"
@@ -26,10 +66,23 @@ with st.sidebar:
     if st.button("更新"):
          st.rerun()
 
-    tickers_text = st.text_input(
-        "銘柄コード",
-        "7203.T,6758.T,9984.T,NVDA"
+    st.subheader("お気に入り銘柄")
+
+    favorites_text = st.text_area(
+        "お気に入り銘柄コード",
+        value=load_favorites(),
+        height=100
     )
+
+    if st.button("お気に入りを保存"):
+        save_favorites(favorites_text)
+        st.success("お気に入りを保存しました")
+
+    tickers = [
+        t.strip()
+        for t in favorites_text.split(",")
+        if t.strip()
+    ]
 
     period = st.selectbox(
         "表示期間",
@@ -37,7 +90,6 @@ with st.sidebar:
         index=1
     )
 
-tickers = [t.strip() for t in tickers_text.split(",") if t.strip()]
 def download_daily(ticker, period):
     return yf.download(
         ticker,
@@ -58,21 +110,14 @@ def download_daily(ticker, period):
         progress=False,
         threads=False
     )
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6= st.tabs([
     "分析結果",
     "ローソク足",
     "ニュース",
     "急騰ランキング",
-    "疑似AI分析"
+    "疑似AI分析",
+    "今日見るべき銘柄"
 ])
-
-# 企業名取得
-def get_display_name(ticker):
-    try:
-        stock = yf.Ticker(ticker)
-        return stock.info.get("shortName", ticker)
-    except:
-        return ticker
 
 # =========================
 # 分析結果タブ
@@ -593,3 +638,126 @@ with tab5:
         for title in news_titles:
             st.write(f"- {title}")
 
+with tab6:
+
+    st.subheader("👀 今日見るべき銘柄ランキング")
+
+    watch_data = []
+
+    for ticker in tickers:
+
+        display_name = get_display_name(ticker)
+
+        try:
+            data = download_daily(ticker, period)
+
+            if data.empty or len(data) < 30:
+                continue
+
+            close = data["Close"].values.flatten()
+            volume = data["Volume"].values.flatten()
+
+            latest_close = close[-1]
+            prev_close = close[-2]
+
+            change_rate = ((latest_close - prev_close) / prev_close) * 100
+
+            ma5 = data["Close"].rolling(5).mean().iloc[-1]
+            ma25 = data["Close"].rolling(25).mean().iloc[-1]
+
+            delta = data["Close"].diff()
+            gain = delta.where(delta > 0, 0)
+            loss = -delta.where(delta < 0, 0)
+
+            avg_gain = gain.rolling(14).mean()
+            avg_loss = loss.rolling(14).mean()
+
+            rs = avg_gain / avg_loss
+            rsi = 100 - (100 / (1 + rs))
+            latest_rsi = rsi.iloc[-1]
+
+            ema12 = data["Close"].ewm(span=12).mean()
+            ema26 = data["Close"].ewm(span=26).mean()
+
+            macd = ema12 - ema26
+            signal = macd.ewm(span=9).mean()
+
+            latest_macd = macd.iloc[-1]
+            latest_signal = signal.iloc[-1]
+
+            score = 0
+            reasons = []
+
+            if change_rate > 0:
+                score += 1
+                reasons.append("前日比プラス")
+
+            if change_rate >= 3:
+                score += 2
+                reasons.append("大きく上昇")
+
+            if ma5 > ma25:
+                score += 2
+                reasons.append("短期線が長期線を上回る")
+
+            if latest_macd > latest_signal:
+                score += 2
+                reasons.append("MACDが上昇サイン")
+
+            if latest_rsi <= 30:
+                score += 2
+                reasons.append("RSIが低く反発期待")
+
+            elif latest_rsi >= 70:
+                score -= 2
+                reasons.append("RSIが高く過熱気味")
+
+            if volume[-1] > np.mean(volume[-10:]):
+                score += 1
+                reasons.append("出来高が増加")
+
+            watch_data.append({
+                "銘柄": display_name,
+                "コード": ticker,
+                "スコア": score,
+                "前日比": change_rate,
+                "RSI": latest_rsi,
+                "理由": reasons
+            })
+
+        except:
+            continue
+
+    watch_data = sorted(
+        watch_data,
+        key=lambda x: x["スコア"],
+        reverse=True
+    )
+
+    if watch_data:
+
+        for i, item in enumerate(watch_data, start=1):
+
+            medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}位"
+
+            with st.container(border=True):
+
+                st.subheader(f"{medal} {item['銘柄']}")
+                st.caption(item["コード"])
+
+                col1, col2, col3 = st.columns(3)
+
+                col1.metric("AI注目スコア", item["スコア"])
+                col2.metric("前日比", f"{item['前日比']:.2f}%")
+                col3.metric("RSI", f"{item['RSI']:.2f}")
+
+                st.write("注目理由")
+
+                if item["理由"]:
+                    for reason in item["理由"]:
+                        st.write(f"- {reason}")
+                else:
+                    st.write("明確な注目理由なし")
+
+    else:
+        st.write("注目銘柄を作成できませんでした。")
