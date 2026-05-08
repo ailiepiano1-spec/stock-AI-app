@@ -11,11 +11,10 @@ from sklearn.linear_model import LinearRegression
 
 st.set_page_config(
     page_title="AI予測精度評価",
-    page_icon="📊",
     layout="wide"
 )
 
-st.title("📊 AI予測精度評価")
+st.title("AI予測精度評価")
 
 # =========================
 # 入力
