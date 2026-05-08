@@ -10,6 +10,13 @@ st.set_page_config(
 )
 
 st.title("📈 AI株価分析アプリ")
+st.title("AI株価分析アプリ")
+backtest_url = "https://stock-ai-app-4app97coiy8bdxmc9poybk6.streamlit.app/"
+
+st.link_button(
+    "AI予測精度評価",
+    backtest_url
+)
 st.write("yfinance version:", yf.__version__)
 
 # =========================
