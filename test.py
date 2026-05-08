@@ -6,7 +6,7 @@ import numpy as np
 import os
 
 st.set_page_config(
-    page_title="AI株価分析アプリ",
+    page_title="AI株価分析",
     layout="wide"
 )
 def get_display_name(ticker):
@@ -123,7 +123,7 @@ tab1, tab2, tab3, tab4, tab5, tab6= st.tabs([
     "ニュース",
     "急騰ランキング",
     "疑似AI分析",
-    "今日見るべき銘柄"
+    "今後動きそうな銘柄"
 ])
 
 # =========================
@@ -183,8 +183,8 @@ with tab1:
             col1, col2, col3, col4 = st.columns(4)
             col1.metric("直近終値", f"{latest_close:.2f}")
             col2.metric("5日平均", f"{latest_ma5:.2f}")
-            col3.metric("AI予測", f"{predicted_price:.2f}", f"{change_rate:.2f}%")
-            col4.metric("判定", signal)
+            col3.metric("将来的なAI予測", f"{predicted_price:.2f}", f"{change_rate:.2f}%")
+            col4.metric("現時点での判定", signal)
 
             st.info(
                 f"{display_name} は5日平均線との比較では **{trend}** です。"
@@ -647,7 +647,7 @@ with tab5:
 
 with tab6:
 
-    st.subheader("今日見るべき銘柄ランキング")
+    st.subheader("今後動きそうな銘柄ランキング")
 
     watch_data = []
 
