@@ -12,12 +12,19 @@ st.set_page_config(
 def get_display_name(ticker):
 
     try:
+
         stock = yf.Ticker(ticker)
 
-        return stock.info.get(
-            "shortName",
-            ticker
-        )
+        info = stock.info
+
+        if "shortName" in info:
+            return info["shortName"]
+
+        elif "longName" in info:
+            return info["longName"]
+
+        else:
+            return ticker
 
     except:
 
@@ -640,7 +647,7 @@ with tab5:
 
 with tab6:
 
-    st.subheader("👀 今日見るべき銘柄ランキング")
+    st.subheader("今日見るべき銘柄ランキング")
 
     watch_data = []
 
